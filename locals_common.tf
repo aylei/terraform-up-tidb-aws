@@ -1,6 +1,6 @@
 locals {
-  name      = "example-cluster"
+  name      = "benchmark"
   n_tidb    = 2
   n_tikv    = 3
-  n_tiflash = 0
+  n_tiflash = 2
 }

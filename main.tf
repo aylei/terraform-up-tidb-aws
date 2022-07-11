@@ -143,6 +143,10 @@ resource "aws_instance" "pd" {
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
   private_ip                  = "172.31.8.1"
+  user_data = <<EOT
+#!/bin/bash
+mkdir -p /mnt/storage
+EOT
 
   root_block_device {
     volume_size           = 50
@@ -181,12 +185,24 @@ resource "aws_instance" "tikv" {
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
   private_ip                  = "172.31.6.${count.index + 1}"
+  user_data = <<EOT
+#!/bin/bash
+mkdir -p /mnt/storage
+echo UUID=`blkid -s UUID -o value /dev/nvme0n1` /mnt/storage ext4 defaults 0 2 | tee -a /etc/fsta
+mount -a
+cat <<EOF > /etc/security/limits.d/99-tidb.conf
+root        soft        nofile        1000000
+root        hard        nofile        1000000
+root        soft        core          unlimited
+root        soft        stack         10240
+EOF
+EOT
 
   root_block_device {
-    volume_size           = 200
+    volume_size           = 50
     delete_on_termination = true
     volume_type           = "gp3"
-    iops                  = 4000
+    iops                  = 3000
     throughput            = 288
   }
 
@@ -220,11 +236,24 @@ resource "aws_instance" "tiflash" {
   associate_public_ip_address = true
   private_ip                  = "172.31.9.${count.index + 1}"
 
+  user_data = <<EOT
+#!/bin/bash
+mkdir -p /mnt/storage
+echo UUID=`blkid -s UUID -o value /dev/nvme0n1` /mnt/storage ext4 defaults 0 2 | tee -a /etc/fsta
+mount -a
+cat <<EOF > /etc/security/limits.d/99-tidb.conf
+root        soft        nofile        1000000
+root        hard        nofile        1000000
+root        soft        core          unlimited
+root        soft        stack         10240
+EOF
+EOT
+
   root_block_device {
-    volume_size           = 200
+    volume_size           = 50
     delete_on_termination = true
     volume_type           = "gp3"
-    iops                  = 6000
+    iops                  = 3000
     throughput            = 288
   }
 
